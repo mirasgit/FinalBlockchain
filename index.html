@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottery DApp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        button {
+            padding: 10px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        #players, #winners {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lottery DApp</h1>
+    
+    <p><strong>Lottery ID:</strong> <span id="lotteryId"></span></p>
+    <p><strong>Contract Balance:</strong> <span id="balance"></span> ETH</p>
+
+    <div>
+        <h2>Enter Lottery</h2>
+        <input type="number" step="0.01" id="amount" placeholder="Enter amount (in ETH)">
+        <button onclick="enterLottery()">Enter</button>
+    </div>
+
+    <div id="players">
+        <h2>Players</h2>
+        <ul id="playersList"></ul>
+    </div>
+
+    <div>
+        <h2>Pick Winner</h2>
+        <button onclick="pickWinner()">Pick Winner</button>
+    </div>
+
+    <div id="winners">
+        <h2>Winners</h2>
+        <ul id="winnersList"></ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
+    <script>
+        // Replace with your contract address and ABI
+        const contractAddress = '0x83CA102E812E34A0c1462bF0fEcA0BBC32c98477';
+        const contractAbi = [
+	{
+		"inputs": [],
+		"name": "enter",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "pickWinner",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "getBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getLotteryId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPlayers",
+		"outputs": [
+			{
+				"internalType": "address payable[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getRandomNumber",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getWinners",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "lotteryId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "players",
+		"outputs": [
+			{
+				"internalType": "address payable",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "winners",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]; // Replace with your contract ABI
+
+        let web3;
+        let contract;
+
+        async function init() {
+            // Connect to the Ethereum network
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.enable();
+                } catch (error) {
+                    console.error('User denied account access');
+                }
+            } else if (window.web3) {
+                web3 = new Web3(web3.currentProvider);
+            } else {
+                console.error('No Ethereum browser extension detected');
+            }
+
+            // Initialize the contract
+            contract = new web3.eth.Contract(contractAbi, contractAddress);
+
+            // Update UI
+            updateLotteryId();
+            updateBalance();
+            updatePlayers();
+            updateWinners();
+        }
+
+        function updateLotteryId() {
+            contract.methods.getLotteryId().call().then(result => {
+                document.getElementById('lotteryId').innerText = result;
+            });
+        }
+
+        function updateBalance() {
+            contract.methods.getBalance().call().then(result => {
+                document.getElementById('balance').innerText = web3.utils.fromWei(result, 'ether');
+            });
+        }
+
+        function updatePlayers() {
+            contract.methods.getPlayers().call().then(players => {
+                const playersList = document.getElementById('playersList');
+                playersList.innerHTML = '';
+                players.forEach(player => {
+                    const listItem = document.createElement('li');
+                    listItem.innerText = player;
+                    playersList.appendChild(listItem);
+                });
+            });
+        }
+
+        function updateWinners() {
+            contract.methods.getWinners().call().then(winners => {
+                const winnersList = document.getElementById('winnersList');
+                winnersList.innerHTML = '';
+                winners.forEach(winner => {
+                    const listItem = document.createElement('li');
+                    listItem.innerText = winner;
+                    winnersList.appendChild(listItem);
+                });
+            });
+        }
+
+        async function enterLottery() {
+            const amount = document.getElementById('amount').value;
+            if (!amount || isNaN(amount)) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            const weiAmount = web3.utils.toWei(amount, 'ether');
+
+            const accounts = await web3.eth.getAccounts();
+            await contract.methods.enter().send({
+                from: accounts[0],
+                value: weiAmount,
+            });
+
+            // Update UI
+            updateBalance();
+            updatePlayers();
+        }
+
+        async function pickWinner() {
+            const accounts = await web3.eth.getAccounts();
+            await contract.methods.pickWinner().send({
+                from: accounts[0],
+            });
+
+            // Update UI
+            updateBalance();
+            updatePlayers();
+            updateWinners();
+            updateLotteryId();
+        }
+
+        // Initialize the DApp
+        init();
+    </script>
+</body>
+</html>
